@@ -8,9 +8,9 @@ import numpy as np
 root_mapping =  { "NC": 0, "A": 1, "A#": 2, "B": 3, "C": 4, "C#": 5, "D": 6, "D#": 7, "E": 8, "F": 9, "F#": 10, "G": 11, "G#": 12 }
 chord_mapping = { "NC": 0, "": 1, "m": 2, "5": 3, "7": 4, "maj7": 5, "m7": 6, "6": 7, "m6": 8, "9": 9, "m9": 10, "dim": 11, "aug": 12, "sus2": 13, "sus4": 14, "m7b5": 15 }
 
-class RootCNN(nn.Module):
-    def __init__(self, num_classes=len(root_mapping)):
-        super(RootCNN, self).__init__()
+class CNN(nn.Module):
+    def __init__(self, num_classes):
+        super(CNN, self).__init__()
         self.features = nn.Sequential(
             # Block 1 - asymmetric kernel to capture harmonic structure
             nn.Conv2d(1, 32, kernel_size=(7, 3), padding=(3, 1)),
@@ -51,48 +51,6 @@ class RootCNN(nn.Module):
         x = self.classifier(x)
         return F.log_softmax(x, dim=1)
 
-class ChordCNN(nn.Module):
-    def __init__(self, num_classes=len(chord_mapping)):
-        super(ChordCNN, self).__init__()
-        self.features = nn.Sequential(
-            # Block 1 - asymmetric kernel to capture harmonic structure
-            nn.Conv2d(1, 32, kernel_size=(7, 3), padding=(3, 1)),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.Conv2d(32, 32, kernel_size=(5, 3), padding=(2, 1)),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2),  # → [batch, 32, 42, 215]
-
-            # Block 2
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.MaxPool2d(2),  # → [batch, 64, 21, 107]
-
-            # Block 3
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool2d((1, 1))  # → [batch, 128, 1, 1]
-        )
-
-        self.classifier = nn.Sequential(
-            nn.Flatten(),
-            nn.Dropout(0.3),
-            nn.Linear(128, num_classes)
-        )
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-        return F.log_softmax(x, dim=1)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
